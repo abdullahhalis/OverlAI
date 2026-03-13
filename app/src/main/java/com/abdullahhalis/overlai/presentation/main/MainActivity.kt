@@ -1,26 +1,38 @@
 package com.abdullahhalis.overlai.presentation.main
 
 import android.content.Intent
+import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import android.provider.Settings
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.net.toUri
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
 import com.abdullahhalis.overlai.service.OverlayService
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     private val overlayPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) {
         checkAndStartOverlay()
+    }
+
+    private val capturePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        Log.d("MainActivity", "resultCode: ${result.resultCode}, data: ${result.data}")
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            startOverlayService(result.resultCode, result.data!!)
+        } else {
+            Toast.makeText(this, "Screen capture permission required", Toast.LENGTH_SHORT).show()
+        }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +50,7 @@ class MainActivity : ComponentActivity() {
 
     private fun checkAndStartOverlay() {
         if (Settings.canDrawOverlays(this)) {
-            startOverlayService()
+            requestMediaProjectionPermission()
         } else {
             val intent = Intent(
                 Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
@@ -48,29 +60,26 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun startOverlayService() {
-        val intent = Intent(this, OverlayService::class.java)
+    private fun requestMediaProjectionPermission() {
+        val mediaProjectionManager = getSystemService(
+            MEDIA_PROJECTION_SERVICE
+        ) as MediaProjectionManager
+        capturePermissionLauncher.launch(
+            mediaProjectionManager.createScreenCaptureIntent()
+        )
+    }
+
+    private fun startOverlayService(resultCode: Int, data: Intent) {
+        Log.d("MainActivity", "startOverlayService - resultCode: $resultCode")
+        val intent = Intent(this, OverlayService::class.java).apply {
+            putExtra(OverlayService.EXTRA_RESULT_CODE, resultCode)
+            putExtra(OverlayService.EXTRA_RESULT_DATA, data)
+        }
         startForegroundService(intent)
     }
 
     private fun stopOverlayService() {
         val intent = Intent(this, OverlayService::class.java)
         stopService(intent)
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    OverlAITheme {
-        Greeting("Android")
     }
 }

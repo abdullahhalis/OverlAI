@@ -1,12 +1,14 @@
 package com.abdullahhalis.overlai.service
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
 import android.content.Intent
 import android.graphics.PixelFormat
+import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import android.view.Gravity
@@ -16,13 +18,29 @@ import android.view.WindowManager
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
-import com.abdullahhalis.overlai.R
 import com.abdullahhalis.overlai.presentation.overlay.FloatingBubble
 import com.abdullahhalis.overlai.presentation.overlay.OverlayLifecycleOwner
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
+import com.abdullahhalis.overlai.utils.saveToGallery
+import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import javax.inject.Inject
 import kotlin.math.abs
 
+@AndroidEntryPoint
 class OverlayService: Service() {
+
+    @Inject
+    lateinit var captureManager: CaptureManager
+
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+
     private lateinit var windowManager: WindowManager
     private lateinit var bubbleView: ComposeView
     private lateinit var lifecycleOwner: OverlayLifecycleOwner
@@ -32,11 +50,33 @@ class OverlayService: Service() {
     private var initialTouchX = 0f
     private var initialTouchY = 0f
     private var isDragging = false
+    private val captureMutex = Mutex()
     private val touchSlop by lazy {
         ViewConfiguration.get(this).scaledTouchSlop
     }
 
     override fun onBind(p0: Intent?): IBinder? = null
+
+    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
+        val resultData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            intent?.getParcelableExtra(EXTRA_RESULT_DATA, Intent::class.java)
+        } else {
+            @Suppress("DEPRECATION")
+            intent?.getParcelableExtra(EXTRA_RESULT_DATA)
+        }
+
+        Log.d("OverlayService", "onStartCommand - resultCode: $resultCode, resultData: $resultData")
+
+        if (resultCode == Activity.RESULT_OK && resultData != null) {
+            captureManager.initialize(resultCode, resultData)
+            Log.d("OverlayService", "CaptureManager initialized!")
+        } else {
+            Log.d("OverlayService", "Initialize skipped — resultCode or resultData null!")
+        }
+        
+        return START_NOT_STICKY
+    }
 
     override fun onCreate() {
         super.onCreate()
@@ -48,6 +88,8 @@ class OverlayService: Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        serviceScope.cancel()
+        captureManager.release()
         with(lifecycleOwner) {
             onPause()
             onStop()
@@ -143,7 +185,25 @@ class OverlayService: Service() {
     }
 
     private fun onBubbleTapped() {
-        Log.d("button click", "float button clicked")
+        Log.d(OverlayService::class.java.simpleName, "float button clicked")
+        serviceScope.launch {
+            if (!captureMutex.tryLock()) return@launch
+
+            try {
+                bubbleView.alpha = 0f
+                delay(100)
+
+                val bitmap = captureManager.captureScreen()
+                if (bitmap != null) {
+                    bitmap.saveToGallery(this@OverlayService)
+                    Log.d(OverlayService::class.java.simpleName, "Capture Success: ${bitmap.width}x${bitmap.height}")
+                }
+
+                bubbleView.alpha = 1f
+            } finally {
+                captureMutex.unlock()
+            }
+        }
     }
 
     private fun buildNotification(): Notification {
@@ -167,5 +227,7 @@ class OverlayService: Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 1
+        const val EXTRA_RESULT_CODE = "extra_result_code"
+        const val EXTRA_RESULT_DATA = "extra_result_data"
     }
 }
