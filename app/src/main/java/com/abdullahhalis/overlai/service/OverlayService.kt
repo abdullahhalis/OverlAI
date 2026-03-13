@@ -21,6 +21,7 @@ import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.abdullahhalis.overlai.presentation.overlay.FloatingBubble
 import com.abdullahhalis.overlai.presentation.overlay.OverlayLifecycleOwner
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
+import com.abdullahhalis.overlai.utils.OcrLanguage
 import com.abdullahhalis.overlai.utils.saveToGallery
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
@@ -38,6 +39,9 @@ class OverlayService: Service() {
 
     @Inject
     lateinit var captureManager: CaptureManager
+
+    @Inject
+    lateinit var ocrManager: OcrManager
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
@@ -197,8 +201,16 @@ class OverlayService: Service() {
                 if (bitmap != null) {
                     bitmap.saveToGallery(this@OverlayService)
                     Log.d(OverlayService::class.java.simpleName, "Capture Success: ${bitmap.width}x${bitmap.height}")
+
+                    val ocrResult = ocrManager.recognize(bitmap, OcrLanguage.JAPANESE)
+                    ocrResult.forEach { result ->
+                        Log.d(OverlayService::class.java.simpleName, "OCR: ${result.text} at ${result.boundingBox}")
+                    }
                 }
 
+                bubbleView.alpha = 1f
+            }catch(e: Exception) {
+                Log.e(OverlayService::class.java.simpleName, "Error: ${e.message}" )
                 bubbleView.alpha = 1f
             } finally {
                 captureMutex.unlock()

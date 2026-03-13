@@ -78,4 +78,9 @@ dependencies {
     implementation(libs.coil.compose)
 
     implementation(libs.androidx.compose.material.icons.extended)
+
+    implementation(libs.mlkit.text.recognition)
+    implementation(libs.mlkit.text.recognition.japanase)
+    implementation(libs.mlkit.text.recognition.korean)
+    implementation(libs.mlkit.text.recognition.chinese)
 }
