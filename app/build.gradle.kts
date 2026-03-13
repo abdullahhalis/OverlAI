@@ -83,4 +83,8 @@ dependencies {
     implementation(libs.mlkit.text.recognition.japanase)
     implementation(libs.mlkit.text.recognition.korean)
     implementation(libs.mlkit.text.recognition.chinese)
+
+    implementation(libs.mlkit.translate)
+    implementation(libs.mlkit.language.id)
+    implementation(libs.kotlinx.coroutines.play.services)
 }

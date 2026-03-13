@@ -43,6 +43,9 @@ class OverlayService: Service() {
     @Inject
     lateinit var ocrManager: OcrManager
 
+    @Inject
+    lateinit var translationManager: TranslationManager
+
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private lateinit var windowManager: WindowManager
@@ -206,6 +209,11 @@ class OverlayService: Service() {
                     ocrResult.forEach { result ->
                         Log.d(OverlayService::class.java.simpleName, "OCR: ${result.text} at ${result.boundingBox}")
                     }
+
+                    val translationResults = translationManager.translate(ocrResult)
+                    translationResults.forEach { result ->
+                        Log.d(OverlayService::class.java.simpleName, "Translated: ${result.originalText} -> ${result.translatedText}")
+                    }
                 }
 
                 bubbleView.alpha = 1f
@@ -214,6 +222,7 @@ class OverlayService: Service() {
                 bubbleView.alpha = 1f
             } finally {
                 captureMutex.unlock()
+                bubbleView.alpha = 1f
             }
         }
     }

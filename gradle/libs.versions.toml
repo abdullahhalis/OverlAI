@@ -18,7 +18,10 @@ datastore = "1.2.0"
 coil = "2.7.0"
 materialIconsExtended = "1.7.8"
 
-mlkitTextRecognition = "16.0.0"
+mlkitTextRecognition = "16.0.1"
+mlkitTranslate = "17.0.3"
+mlkitLanguageId = "17.0.6"
+kotlinxCoroutinesPlayServices = "1.8.1"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -56,6 +59,10 @@ mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition"
 mlkit-text-recognition-japanase = { group = "com.google.mlkit", name = "text-recognition-japanese", version.ref = "mlkitTextRecognition"}
 mlkit-text-recognition-korean = { group = "com.google.mlkit", name = "text-recognition-korean", version.ref = "mlkitTextRecognition"}
 mlkit-text-recognition-chinese = { group = "com.google.mlkit", name = "text-recognition-chinese", version.ref = "mlkitTextRecognition"}
+
+mlkit-translate = { group = "com.google.mlkit", name = "translate", version.ref = "mlkitTranslate"}
+mlkit-language-id = { group = "com.google.mlkit", name = "language-id", version.ref = "mlkitLanguageId"}
+kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
