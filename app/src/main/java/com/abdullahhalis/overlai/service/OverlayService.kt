@@ -14,15 +14,18 @@ import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewConfiguration
+import android.view.WindowInsets
 import android.view.WindowManager
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.abdullahhalis.overlai.presentation.overlay.FloatingBubble
 import com.abdullahhalis.overlai.presentation.overlay.OverlayLifecycleOwner
+import com.abdullahhalis.overlai.presentation.overlay.OverlayState
+import com.abdullahhalis.overlai.presentation.overlay.TranslationOverlay
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
 import com.abdullahhalis.overlai.utils.OcrLanguage
-import com.abdullahhalis.overlai.utils.saveToGallery
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,12 +49,26 @@ class OverlayService: Service() {
     @Inject
     lateinit var translationManager: TranslationManager
 
-    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
 
     private lateinit var windowManager: WindowManager
     private lateinit var bubbleView: ComposeView
+    private lateinit var overlayView: ComposeView
+    private val overlayParams: WindowManager.LayoutParams by lazy {
+        WindowManager.LayoutParams(
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.MATCH_PARENT,
+            WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE or
+                    WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN,
+            PixelFormat.TRANSLUCENT
+        )
+    }
     private lateinit var lifecycleOwner: OverlayLifecycleOwner
 
+    private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val overlayState = mutableStateOf<OverlayState>(OverlayState.Idle)
     private var initialX = 0
     private var initialY = 0
     private var initialTouchX = 0f
@@ -91,6 +108,7 @@ class OverlayService: Service() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         setupLifecycleOwner()
         setupBubble()
+        setupOverlayView()
     }
 
     override fun onDestroy() {
@@ -102,9 +120,8 @@ class OverlayService: Service() {
             onStop()
             onDestroy()
         }
-        if (::bubbleView.isInitialized) {
-            windowManager.removeView(bubbleView)
-        }
+        if (::bubbleView.isInitialized) windowManager.removeView(bubbleView)
+        if (::overlayView.isInitialized) windowManager.removeView(overlayView)
     }
 
     private fun setupLifecycleOwner() {
@@ -191,6 +208,28 @@ class OverlayService: Service() {
         windowManager.addView(bubbleView, params)
     }
 
+    private fun setupOverlayView() {
+        overlayView = ComposeView(this).apply {
+            setViewTreeLifecycleOwner(lifecycleOwner)
+            setViewTreeSavedStateRegistryOwner(lifecycleOwner)
+            setContent {
+                OverlAITheme {
+                    TranslationOverlay(
+                        state = overlayState.value,
+                        topOffset = getTopOffset(),
+                        onDismiss = {
+                            overlayState.value = OverlayState.Idle
+
+                            overlayParams.flags = overlayParams.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                            windowManager.updateViewLayout(overlayView, overlayParams)
+                        }
+                    )
+                }
+            }
+        }
+        windowManager.addView(overlayView, overlayParams)
+    }
+
     private fun onBubbleTapped() {
         Log.d(OverlayService::class.java.simpleName, "float button clicked")
         serviceScope.launch {
@@ -198,11 +237,12 @@ class OverlayService: Service() {
 
             try {
                 bubbleView.alpha = 0f
+                overlayState.value = OverlayState.Loading
                 delay(100)
 
                 val bitmap = captureManager.captureScreen()
                 if (bitmap != null) {
-                    bitmap.saveToGallery(this@OverlayService)
+//                    bitmap.saveToGallery(this@OverlayService)
                     Log.d(OverlayService::class.java.simpleName, "Capture Success: ${bitmap.width}x${bitmap.height}")
 
                     val ocrResult = ocrManager.recognize(bitmap, OcrLanguage.JAPANESE)
@@ -214,16 +254,34 @@ class OverlayService: Service() {
                     translationResults.forEach { result ->
                         Log.d(OverlayService::class.java.simpleName, "Translated: ${result.originalText} -> ${result.translatedText}")
                     }
+
+                    overlayState.value = OverlayState.Success(translationResults)
+                    overlayParams.flags = overlayParams.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+                    windowManager.updateViewLayout(overlayView, overlayParams)
                 }
 
                 bubbleView.alpha = 1f
             }catch(e: Exception) {
                 Log.e(OverlayService::class.java.simpleName, "Error: ${e.message}" )
+                overlayState.value = OverlayState.Error(e.message ?: "Unknown Error")
                 bubbleView.alpha = 1f
             } finally {
                 captureMutex.unlock()
                 bubbleView.alpha = 1f
             }
+        }
+    }
+
+    @SuppressLint("InternalInsetResource")
+    private fun getTopOffset(): Int {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val insets = windowManager.currentWindowMetrics.windowInsets
+            maxOf(
+                insets.getInsets(WindowInsets.Type.statusBars()).top,
+                insets.getInsets(WindowInsets.Type.displayCutout()).top
+            )
+        } else {
+            (24 * resources.displayMetrics.density).toInt()
         }
     }
 
