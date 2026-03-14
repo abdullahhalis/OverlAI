@@ -3,6 +3,7 @@ package com.abdullahhalis.overlai.service
 import android.graphics.Bitmap
 import com.abdullahhalis.overlai.data.model.OcrResult
 import com.abdullahhalis.overlai.utils.OcrLanguage
+import com.abdullahhalis.overlai.utils.mergeNearbyBlocks
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.chinese.ChineseTextRecognizerOptions
@@ -37,7 +38,7 @@ class OcrManager @Inject constructor() {
                             text = block.text,
                             boundingBox = block.boundingBox
                         )
-                    }
+                    }.mergeNearbyBlocks(language)
                     continuation.resume(result)
                 }
                 .addOnFailureListener { e ->

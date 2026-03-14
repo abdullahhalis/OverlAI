@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -14,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -81,6 +83,8 @@ private fun TranslationBubble(
 ) {
     val box = result.boundingBox!!
     val density = LocalDensity.current
+    val screenWidth = LocalConfiguration.current.screenWidthDp.dp
+    val screenHeight = LocalConfiguration.current.screenHeightDp.dp
 
     val leftDp = with(density) { box.left.toDp() }
     val topDp = with(density) { box.top.toDp() }
@@ -90,13 +94,13 @@ private fun TranslationBubble(
 
     val isVertical = box.height() > box.width() * 1.5f
 
+    val clampedLeft = leftDp.coerceIn(0.dp, (screenWidth - widthDp).coerceAtLeast(0.dp))
+    val clampedTop = (topDp - topOffsetDp).coerceIn(0.dp, screenHeight - 40.dp)
+
     Box(
         modifier = modifier
-            .absoluteOffset(x = leftDp, y = topDp - topOffsetDp)
-            .sizeIn(
-                minWidth = if (isVertical) 60.dp else widthDp,
-                minHeight = if (isVertical) 0.dp else heightDp
-            )
+            .absoluteOffset(x = clampedLeft, y = clampedTop)
+            .width(widthDp.coerceAtLeast(if (isVertical) 40.dp else 60.dp))
             .clip(RoundedCornerShape(4.dp))
             .background(Color.Black.copy(alpha = 0.75f))
             .padding(4.dp),
@@ -105,11 +109,11 @@ private fun TranslationBubble(
         Text(
             text = result.translatedText,
             color = Color.White,
-            fontSize = if (isVertical) 9.sp else 10.sp,
-            lineHeight = 13.sp,
+            fontSize = if (isVertical) 8.sp else 10.sp,
+            lineHeight = if (isVertical) 11.sp else 13.sp,
             textAlign = TextAlign.Center,
             maxLines = if (isVertical) 6 else 3,
-            overflow = TextOverflow.Ellipsis
+            overflow = TextOverflow.Visible
         )
     }
 }
