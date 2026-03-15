@@ -14,6 +14,7 @@ import android.os.Handler
 import android.os.Looper
 import android.util.DisplayMetrics
 import android.util.Log
+import android.view.WindowInsets
 import android.view.WindowManager
 import com.abdullahhalis.overlai.utils.toBitmap
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -30,6 +31,7 @@ class CaptureManager @Inject constructor(
 
     private var width = 0
     private var height = 0
+    private var statusBarHeight = 0
 
     fun initialize(resultCode: Int, resultData: Intent) {
         val mediaProjectionManager =
@@ -41,6 +43,19 @@ class CaptureManager @Inject constructor(
                 release()
             }
         }, Handler(Looper.getMainLooper()))
+
+        statusBarHeight = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            val insets = context.getSystemService(Context.WINDOW_SERVICE)
+                .let { it as WindowManager }
+                .currentWindowMetrics
+                .windowInsets
+            maxOf(
+                insets.getInsets(WindowInsets.Type.statusBars()).top,
+                insets.getInsets(WindowInsets.Type.displayCutout()).top
+            )
+        } else {
+            (24 * context.resources.displayMetrics.density).toInt()
+        }
 
         setupVirtualDisplay()
     }
@@ -81,7 +96,14 @@ class CaptureManager @Inject constructor(
         val image = imageReader?.acquireLatestImage() ?: return null
         val bitmap = image.toBitmap(width, height)
         image.close()
-        return bitmap
+
+        return Bitmap.createBitmap(
+            bitmap,
+            0,
+            statusBarHeight,
+            width,
+            height - statusBarHeight
+        ).also { bitmap.recycle() }
     }
 
     fun release() {

@@ -27,7 +27,6 @@ import com.abdullahhalis.overlai.presentation.overlay.component.LoadingOverlay
 @Composable
 fun TranslationOverlay(
     state: OverlayState,
-    topOffset: Int,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -39,7 +38,6 @@ fun TranslationOverlay(
         is OverlayState.Success -> {
             ResultOverlay(
                 results = state.results,
-                topOffset = topOffset,
                 onDismiss = onDismiss,
                 modifier
             )
@@ -57,7 +55,6 @@ fun TranslationOverlay(
 @Composable
 private fun ResultOverlay(
     results: List<TranslationResult>,
-    topOffset: Int,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -68,7 +65,7 @@ private fun ResultOverlay(
     ) {
         results.forEach { result ->
             if (result.boundingBox != null && result.translatedText.isNotBlank()) {
-                TranslationBubble(result, topOffset)
+                TranslationBubble(result)
             }
         }
 
@@ -92,7 +89,6 @@ private fun ResultOverlay(
 @Composable
 private fun TranslationBubble(
     result: TranslationResult,
-    topOffset: Int,
     modifier: Modifier = Modifier
 ) {
     val box = result.boundingBox!!
@@ -102,13 +98,12 @@ private fun TranslationBubble(
 
     val leftDp = with(density) { box.left.toDp() }
     val topDp = with(density) { box.top.toDp() }
-    val topOffsetDp = with(density) { topOffset.toDp()}
     val widthDp = with(density) { box.width().toDp() }
 
     val isVertical = box.height() > box.width() * 1.5f
 
     val clampedLeft = leftDp.coerceIn(0.dp, (screenWidth - widthDp).coerceAtLeast(0.dp))
-    val clampedTop = (topDp - topOffsetDp).coerceIn(0.dp, screenHeight - 40.dp)
+    val clampedTop = topDp.coerceIn(0.dp, screenHeight - 40.dp)
 
     Box(
         modifier = modifier

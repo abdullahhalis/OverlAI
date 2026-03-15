@@ -15,7 +15,6 @@ import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewConfiguration
-import android.view.WindowInsets
 import android.view.WindowManager
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
@@ -221,10 +220,8 @@ class OverlayService: Service() {
                 OverlAITheme {
                     TranslationOverlay(
                         state = overlayState.value,
-                        topOffset = getTopOffset(),
                         onDismiss = {
                             overlayState.value = OverlayState.Idle
-
                             overlayParams.flags = overlayParams.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
                             windowManager.updateViewLayout(overlayView, overlayParams)
                         }
@@ -242,8 +239,8 @@ class OverlayService: Service() {
 
             try {
                 bubbleView.alpha = 0f
-                overlayState.value = OverlayState.Loading
                 delay(100)
+                overlayState.value = OverlayState.Loading
 
                 val bitmap = captureManager.captureScreen()
                 if (bitmap != null) {
@@ -282,19 +279,6 @@ class OverlayService: Service() {
                 captureMutex.unlock()
                 bubbleView.alpha = 1f
             }
-        }
-    }
-
-    @SuppressLint("InternalInsetResource")
-    private fun getTopOffset(): Int {
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            val insets = windowManager.currentWindowMetrics.windowInsets
-            maxOf(
-                insets.getInsets(WindowInsets.Type.statusBars()).top,
-                insets.getInsets(WindowInsets.Type.displayCutout()).top
-            )
-        } else {
-            (24 * resources.displayMetrics.density).toInt()
         }
     }
 
