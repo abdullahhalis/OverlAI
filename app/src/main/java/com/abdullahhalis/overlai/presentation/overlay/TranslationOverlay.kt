@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.absoluteOffset
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -72,6 +71,21 @@ private fun ResultOverlay(
                 TranslationBubble(result, topOffset)
             }
         }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 32.dp)
+                .clip(RoundedCornerShape(20.dp))
+                .background(Color.Black.copy(alpha = 0.5f))
+                .padding(horizontal = 16.dp, vertical = 8.dp)
+        ) {
+            Text(
+                text = "Tap anywhere to dismiss",
+                color = Color.White.copy(alpha = 0.8f),
+                fontSize = 11.sp
+            )
+        }
     }
 }
 
@@ -90,7 +104,6 @@ private fun TranslationBubble(
     val topDp = with(density) { box.top.toDp() }
     val topOffsetDp = with(density) { topOffset.toDp()}
     val widthDp = with(density) { box.width().toDp() }
-    val heightDp = with(density) { box.height().toDp() }
 
     val isVertical = box.height() > box.width() * 1.5f
 

@@ -5,6 +5,7 @@ import android.app.Activity
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Intent
 import android.graphics.PixelFormat
@@ -21,6 +22,7 @@ import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.abdullahhalis.overlai.data.repository.AppRepository
+import com.abdullahhalis.overlai.presentation.main.MainActivity
 import com.abdullahhalis.overlai.presentation.overlay.FloatingBubble
 import com.abdullahhalis.overlai.presentation.overlay.OverlayLifecycleOwner
 import com.abdullahhalis.overlai.presentation.overlay.OverlayState
@@ -261,7 +263,12 @@ class OverlayService: Service() {
                         Log.d(OverlayService::class.java.simpleName, "Translated: ${result.originalText} -> ${result.translatedText}")
                     }
 
-                    overlayState.value = OverlayState.Success(translationResults)
+                    if (translationResults.isEmpty()) {
+                        overlayState.value = OverlayState.Error("No Text detected")
+                    } else {
+                        overlayState.value = OverlayState.Success(translationResults)
+                    }
+
                     overlayParams.flags = overlayParams.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
                     windowManager.updateViewLayout(overlayView, overlayParams)
                 }
@@ -304,9 +311,19 @@ class OverlayService: Service() {
             manager.createNotificationChannel(channel)
         }
 
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_SINGLE_TOP
+        }
+
+        val pendingIntent = PendingIntent.getActivity(
+            this, 0, intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
         return Notification.Builder(this, channelId)
             .setContentTitle("OverlAI is Active")
             .setContentText("Tap bubble to capture")
+            .setContentIntent(pendingIntent)
             .build()
     }
 
