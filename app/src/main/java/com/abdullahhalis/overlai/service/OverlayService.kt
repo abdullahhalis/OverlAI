@@ -20,18 +20,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.abdullahhalis.overlai.data.repository.AppRepository
 import com.abdullahhalis.overlai.presentation.overlay.FloatingBubble
 import com.abdullahhalis.overlai.presentation.overlay.OverlayLifecycleOwner
 import com.abdullahhalis.overlai.presentation.overlay.OverlayState
 import com.abdullahhalis.overlai.presentation.overlay.TranslationOverlay
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
-import com.abdullahhalis.overlai.utils.OcrLanguage
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
@@ -49,6 +50,8 @@ class OverlayService: Service() {
     @Inject
     lateinit var translationManager: TranslationManager
 
+    @Inject
+    lateinit var appRepository: AppRepository
 
     private lateinit var windowManager: WindowManager
     private lateinit var bubbleView: ComposeView
@@ -245,12 +248,15 @@ class OverlayService: Service() {
 //                    bitmap.saveToGallery(this@OverlayService)
                     Log.d(OverlayService::class.java.simpleName, "Capture Success: ${bitmap.width}x${bitmap.height}")
 
-                    val ocrResult = ocrManager.recognize(bitmap, OcrLanguage.JAPANESE)
+                    val sourceLanguage = appRepository.sourceLanguage.first()
+                    val targetLanguage = appRepository.targetLanguage.first()
+
+                    val ocrResult = ocrManager.recognize(bitmap, sourceLanguage)
                     ocrResult.forEach { result ->
                         Log.d(OverlayService::class.java.simpleName, "OCR: ${result.text} at ${result.boundingBox}")
                     }
 
-                    val translationResults = translationManager.translate(ocrResult)
+                    val translationResults = translationManager.translate(ocrResult, sourceLanguage, targetLanguage)
                     translationResults.forEach { result ->
                         Log.d(OverlayService::class.java.simpleName, "Translated: ${result.originalText} -> ${result.translatedText}")
                     }

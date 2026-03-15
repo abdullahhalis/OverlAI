@@ -11,6 +11,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.net.toUri
+import com.abdullahhalis.overlai.presentation.navigation.NavGraph
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
 import com.abdullahhalis.overlai.service.OverlayService
 import dagger.hilt.android.AndroidEntryPoint
@@ -40,7 +41,7 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             OverlAITheme {
-                MainScreen(
+                NavGraph(
                     onStartOverlay = { checkAndStartOverlay() },
                     onStopOverlay = { stopOverlayService() }
                 )

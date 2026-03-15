@@ -3,8 +3,8 @@ package com.abdullahhalis.overlai.service
 import android.util.Log
 import com.abdullahhalis.overlai.data.model.OcrResult
 import com.abdullahhalis.overlai.data.model.TranslationResult
+import com.abdullahhalis.overlai.utils.OcrLanguage
 import com.abdullahhalis.overlai.utils.TranslationLanguage
-import com.google.mlkit.nl.translate.TranslateLanguage
 import com.google.mlkit.nl.translate.Translation
 import com.google.mlkit.nl.translate.Translator
 import com.google.mlkit.nl.translate.TranslatorOptions
@@ -33,21 +33,12 @@ class TranslationManager @Inject constructor() {
         }
     }
 
-    suspend fun downloadModelIfNeeded(
-        sourceLanguage: String,
-        targetLanguage: String
-    ) {
-        val translator = getTranslator(sourceLanguage, targetLanguage)
-        translator.downloadModelIfNeeded().await()
-        Log.d(TranslationManager::class.java.simpleName, "Model ready: $sourceLanguage -> $targetLanguage ")
-    }
-
     suspend fun translate(
         ocrResults: List<OcrResult>,
-        sourceLanguage: String = TranslateLanguage.JAPANESE,
+        sourceLanguage: OcrLanguage = OcrLanguage.default(),
         targetLanguage: TranslationLanguage = TranslationLanguage.default()
     ): List<TranslationResult> {
-        val translator = getTranslator(sourceLanguage, targetLanguage.code)
+        val translator = getTranslator(sourceLanguage.code, targetLanguage.code)
 
         translator.downloadModelIfNeeded().await()
 
@@ -75,10 +66,5 @@ class TranslationManager @Inject constructor() {
                     }
             }
         }
-    }
-
-    fun release() {
-        translatorCache.values.forEach { it.close() }
-        translatorCache.clear()
     }
 }

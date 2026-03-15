@@ -17,6 +17,7 @@ room = "2.8.4"
 datastore = "1.2.0"
 coil = "2.7.0"
 materialIconsExtended = "1.7.8"
+navigationCompose = "2.9.7"
 
 mlkitTextRecognition = "16.0.1"
 mlkitTranslate = "17.0.3"
@@ -63,6 +64,8 @@ mlkit-text-recognition-chinese = { group = "com.google.mlkit", name = "text-reco
 mlkit-translate = { group = "com.google.mlkit", name = "translate", version.ref = "mlkitTranslate"}
 mlkit-language-id = { group = "com.google.mlkit", name = "language-id", version.ref = "mlkitLanguageId"}
 kotlinx-coroutines-play-services = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutinesPlayServices" }
+
+androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose"}
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
