@@ -3,7 +3,6 @@ package com.abdullahhalis.overlai.utils
 import android.graphics.Rect
 import android.util.Log
 import com.abdullahhalis.overlai.data.model.OcrResult
-import kotlin.math.abs
 
 fun List<OcrResult>.mergeBlocks(
     sorted: List<OcrResult>,
@@ -59,16 +58,21 @@ fun List<OcrResult>.mergeHorizontalBlocks(
     verticalThreshold: Int
 ): List<OcrResult> {
     val sorted = sortedBy { it.boundingBox?.top ?: 0 }
+
+    sorted.forEach {
+        Log.d("MergeDebug", "block: '${it.text}' box: ${it.boundingBox}")
+    }
+
     return mergeBlocks(
         sorted = sorted,
         isSameGroup = { current, candidate ->
             val verticalOverlap = current.top <= candidate.bottom + verticalThreshold &&
                     current.bottom >= candidate.top - verticalThreshold
-            val horizontalGap = minOf(
-                abs(candidate.left - current.right),
-                abs(current.left - candidate.right)
-            )
-            verticalOverlap && horizontalGap < columnThreshold
+
+            val horizontalOverlap = current.left <= candidate.right + columnThreshold &&
+                    current.right >= candidate.left - columnThreshold
+
+            verticalOverlap && horizontalOverlap
         },
         sortGroupBy = { it.boundingBox!!.left }
     )
@@ -103,7 +107,7 @@ fun List<OcrResult>.mergeVerticalBlocks(
 fun List<OcrResult>.mergeNearbyBlocks(
     language: OcrLanguage,
     columnThreshold: Int = 60,
-    verticalThreshold: Int = 20
+    verticalThreshold: Int = 40
 ): List<OcrResult> {
     if (isEmpty()) return this
 
