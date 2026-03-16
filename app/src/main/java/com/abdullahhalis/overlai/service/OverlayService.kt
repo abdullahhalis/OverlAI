@@ -224,6 +224,10 @@ class OverlayService: Service() {
                             overlayState.value = OverlayState.Idle
                             overlayParams.flags = overlayParams.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
                             windowManager.updateViewLayout(overlayView, overlayParams)
+                        },
+                        onRetry = {
+                            overlayState.value = OverlayState.Idle
+                            onBubbleTapped()
                         }
                     )
                 }

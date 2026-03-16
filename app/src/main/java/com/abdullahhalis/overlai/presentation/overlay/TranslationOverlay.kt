@@ -1,5 +1,6 @@
 package com.abdullahhalis.overlai.presentation.overlay
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -28,6 +29,7 @@ import com.abdullahhalis.overlai.presentation.overlay.component.LoadingOverlay
 fun TranslationOverlay(
     state: OverlayState,
     onDismiss: () -> Unit,
+    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (state) {
@@ -46,6 +48,7 @@ fun TranslationOverlay(
             ErrorOverlay(
                 message = state.message,
                 onDismiss = onDismiss,
+                onRetry = onRetry,
                 modifier
             )
         }
@@ -86,6 +89,7 @@ private fun ResultOverlay(
     }
 }
 
+@SuppressLint("ConfigurationScreenWidthHeight")
 @Composable
 private fun TranslationBubble(
     result: TranslationResult,
