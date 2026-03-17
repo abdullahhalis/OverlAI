@@ -1,4 +1,4 @@
-package com.abdullahhalis.overlai.presentation.settings.component
+package com.abdullahhalis.overlai.presentation.main.component
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

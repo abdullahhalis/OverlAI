@@ -113,6 +113,6 @@ fun List<OcrResult>.mergeNearbyBlocks(
 
     return when(language) {
         OcrLanguage.JAPANESE, OcrLanguage.CHINESE -> mergeVerticalBlocks(columnThreshold, verticalThreshold)
-        OcrLanguage.KOREAN, OcrLanguage.LATIN -> mergeHorizontalBlocks(columnThreshold, verticalThreshold)
+        OcrLanguage.KOREAN, OcrLanguage.ENGLISH -> mergeHorizontalBlocks(columnThreshold, verticalThreshold)
     }
 }

@@ -21,7 +21,7 @@ class AppPreferences @Inject constructor(
     @param:ApplicationContext private val context: Context
 ) {
     val sourceLanguage: Flow<OcrLanguage> = context.dataStore.data.map { prefs ->
-        val value = prefs[KEY_SOURCE_LANGUAGE] ?: OcrLanguage.LATIN.name
+        val value = prefs[KEY_SOURCE_LANGUAGE] ?: OcrLanguage.ENGLISH.name
         OcrLanguage.valueOf(value)
     }
 

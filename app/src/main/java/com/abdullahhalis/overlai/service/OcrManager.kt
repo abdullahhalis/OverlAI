@@ -20,14 +20,14 @@ import kotlin.coroutines.resumeWithException
 class OcrManager @Inject constructor() {
 
     private val recognizers = mapOf(
-        OcrLanguage.LATIN to TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS),
+        OcrLanguage.ENGLISH to TextRecognition.getClient(TextRecognizerOptions.DEFAULT_OPTIONS),
         OcrLanguage.JAPANESE to TextRecognition.getClient(JapaneseTextRecognizerOptions.Builder().build()),
         OcrLanguage.KOREAN to TextRecognition.getClient(KoreanTextRecognizerOptions.Builder().build()),
         OcrLanguage.CHINESE to TextRecognition.getClient(ChineseTextRecognizerOptions.Builder().build()),
     )
 
-    suspend fun recognize(bitmap: Bitmap, language: OcrLanguage = OcrLanguage.LATIN): List<OcrResult> {
-        val recognizer = recognizers[language] ?: recognizers[OcrLanguage.LATIN]!!
+    suspend fun recognize(bitmap: Bitmap, language: OcrLanguage = OcrLanguage.ENGLISH): List<OcrResult> {
+        val recognizer = recognizers[language] ?: recognizers[OcrLanguage.ENGLISH]!!
         val inputImage = InputImage.fromBitmap(bitmap, 0)
 
         return suspendCancellableCoroutine { continuation ->

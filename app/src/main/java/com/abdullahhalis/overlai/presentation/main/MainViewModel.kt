@@ -1,4 +1,4 @@
-package com.abdullahhalis.overlai.presentation.settings
+package com.abdullahhalis.overlai.presentation.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -12,14 +12,14 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
-class SettingsViewModel @Inject constructor(
+class MainViewModel @Inject constructor(
     private val appRepository: AppRepository
 ): ViewModel() {
 
     val sourceLanguage = appRepository.sourceLanguage.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5000),
-        initialValue = OcrLanguage.LATIN
+        initialValue = OcrLanguage.ENGLISH
     )
 
     val targetLanguage = appRepository.targetLanguage.stateIn(
