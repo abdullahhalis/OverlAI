@@ -24,7 +24,7 @@ import com.abdullahhalis.overlai.data.repository.AppRepository
 import com.abdullahhalis.overlai.presentation.main.MainActivity
 import com.abdullahhalis.overlai.presentation.overlay.FloatingBubble
 import com.abdullahhalis.overlai.presentation.overlay.OverlayLifecycleOwner
-import com.abdullahhalis.overlai.presentation.overlay.OverlayState
+import com.abdullahhalis.overlai.presentation.overlay.OverlayUIState
 import com.abdullahhalis.overlai.presentation.overlay.TranslationOverlay
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -35,12 +35,11 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Mutex
 import javax.inject.Inject
 import kotlin.math.abs
 
 @AndroidEntryPoint
-class OverlayService: Service() {
+class OverlayService : Service() {
 
     @Inject
     lateinit var captureManager: CaptureManager
@@ -53,6 +52,9 @@ class OverlayService: Service() {
 
     @Inject
     lateinit var appRepository: AppRepository
+
+    @Inject
+    lateinit var overlayServiceState: OverlayServiceState
 
     private lateinit var windowManager: WindowManager
     private lateinit var bubbleView: ComposeView
@@ -72,13 +74,12 @@ class OverlayService: Service() {
     private lateinit var lifecycleOwner: OverlayLifecycleOwner
 
     private val serviceScope = CoroutineScope(Dispatchers.Main + SupervisorJob())
-    private val overlayState = mutableStateOf<OverlayState>(OverlayState.Idle)
+    private val overlayState = mutableStateOf<OverlayUIState>(OverlayUIState.Idle)
     private var initialX = 0
     private var initialY = 0
     private var initialTouchX = 0f
     private var initialTouchY = 0f
     private var isDragging = false
-    private val captureMutex = Mutex()
     private val touchSlop by lazy {
         ViewConfiguration.get(this).scaledTouchSlop
     }
@@ -86,7 +87,8 @@ class OverlayService: Service() {
     override fun onBind(p0: Intent?): IBinder? = null
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED) ?: Activity.RESULT_CANCELED
+        val resultCode = intent?.getIntExtra(EXTRA_RESULT_CODE, Activity.RESULT_CANCELED)
+            ?: Activity.RESULT_CANCELED
         val resultData = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             intent?.getParcelableExtra(EXTRA_RESULT_DATA, Intent::class.java)
         } else {
@@ -102,12 +104,14 @@ class OverlayService: Service() {
         } else {
             Log.d("OverlayService", "Initialize skipped — resultCode or resultData null!")
         }
-        
+
         return START_NOT_STICKY
     }
 
     override fun onCreate() {
         super.onCreate()
+        overlayServiceState.setRunning(true)
+
         startForeground(NOTIFICATION_ID, buildNotification())
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
         setupLifecycleOwner()
@@ -117,6 +121,8 @@ class OverlayService: Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        overlayServiceState.setRunning(false)
+
         serviceScope.cancel()
         captureManager.release()
         with(lifecycleOwner) {
@@ -205,6 +211,7 @@ class OverlayService: Service() {
                     }
                     true
                 }
+
                 else -> false
             }
         }
@@ -221,12 +228,13 @@ class OverlayService: Service() {
                     TranslationOverlay(
                         state = overlayState.value,
                         onDismiss = {
-                            overlayState.value = OverlayState.Idle
-                            overlayParams.flags = overlayParams.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
+                            overlayState.value = OverlayUIState.Idle
+                            overlayParams.flags =
+                                overlayParams.flags or WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE
                             windowManager.updateViewLayout(overlayView, overlayParams)
                         },
                         onRetry = {
-                            overlayState.value = OverlayState.Idle
+                            overlayState.value = OverlayUIState.Idle
                             onBubbleTapped()
                         }
                     )
@@ -239,48 +247,71 @@ class OverlayService: Service() {
     private fun onBubbleTapped() {
         Log.d(OverlayService::class.java.simpleName, "float button clicked")
         serviceScope.launch {
-            if (!captureMutex.tryLock()) return@launch
+            if (overlayServiceState.isCapturing.value || overlayServiceState.isTranslating.value) return@launch
+
+            overlayServiceState.setCapturing(true)
 
             try {
                 bubbleView.alpha = 0f
                 delay(100)
-                overlayState.value = OverlayState.Loading
+                overlayState.value = OverlayUIState.Loading
 
                 val bitmap = captureManager.captureScreen()
-                if (bitmap != null) {
-//                    bitmap.saveToGallery(this@OverlayService)
-                    Log.d(OverlayService::class.java.simpleName, "Capture Success: ${bitmap.width}x${bitmap.height}")
 
-                    val sourceLanguage = appRepository.sourceLanguage.first()
-                    val targetLanguage = appRepository.targetLanguage.first()
-
-                    val ocrResult = ocrManager.recognize(bitmap, sourceLanguage)
-                    ocrResult.forEach { result ->
-                        Log.d(OverlayService::class.java.simpleName, "OCR: ${result.text} at ${result.boundingBox}")
-                    }
-
-                    val translationResults = translationManager.translate(ocrResult, sourceLanguage, targetLanguage)
-                    translationResults.forEach { result ->
-                        Log.d(OverlayService::class.java.simpleName, "Translated: ${result.originalText} -> ${result.translatedText}")
-                    }
-
-                    if (translationResults.isEmpty()) {
-                        overlayState.value = OverlayState.Error("No Text detected")
-                    } else {
-                        overlayState.value = OverlayState.Success(translationResults)
-                    }
-
-                    overlayParams.flags = overlayParams.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
-                    windowManager.updateViewLayout(overlayView, overlayParams)
+                if (bitmap == null) {
+                    overlayState.value = OverlayUIState.Error("Capture failed")
+                    return@launch
                 }
 
-                bubbleView.alpha = 1f
-            }catch(e: Exception) {
-                Log.e(OverlayService::class.java.simpleName, "Error: ${e.message}" )
-                overlayState.value = OverlayState.Error(e.message ?: "Unknown Error")
-                bubbleView.alpha = 1f
+//                bitmap.saveToGallery(this@OverlayService)
+                Log.d(
+                    OverlayService::class.java.simpleName,
+                    "Capture Success: ${bitmap.width}x${bitmap.height}"
+                )
+
+                val sourceLanguage = appRepository.sourceLanguage.first()
+                val targetLanguage = appRepository.targetLanguage.first()
+
+                val ocrResult = ocrManager.recognize(bitmap, sourceLanguage)
+                ocrResult.forEach { result ->
+                    Log.d(
+                        OverlayService::class.java.simpleName,
+                        "OCR: ${result.text} at ${result.boundingBox}"
+                    )
+                }
+
+                if (ocrResult.isEmpty()) {
+                    overlayState.value = OverlayUIState.Error("No Text detected")
+                    return@launch
+                }
+
+                overlayServiceState.setTranslating(true)
+
+                val translationResults =
+                    translationManager.translate(ocrResult, sourceLanguage, targetLanguage)
+                translationResults.forEach { result ->
+                    Log.d(
+                        OverlayService::class.java.simpleName,
+                        "Translated: ${result.originalText} -> ${result.translatedText}"
+                    )
+                }
+
+                if (translationResults.isEmpty()) {
+                    overlayState.value = OverlayUIState.Error("Translation failed")
+                    return@launch
+                }
+
+                overlayState.value = OverlayUIState.Success(translationResults)
+
+            } catch (e: Exception) {
+                Log.e(OverlayService::class.java.simpleName, "Error: ${e.message}")
+                overlayState.value = OverlayUIState.Error(e.message ?: "Unknown Error")
             } finally {
-                captureMutex.unlock()
+                overlayServiceState.setTranslating(false)
+                overlayServiceState.setCapturing(false)
+                overlayParams.flags =
+                    overlayParams.flags and WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE.inv()
+                windowManager.updateViewLayout(overlayView, overlayParams)
                 bubbleView.alpha = 1f
             }
         }

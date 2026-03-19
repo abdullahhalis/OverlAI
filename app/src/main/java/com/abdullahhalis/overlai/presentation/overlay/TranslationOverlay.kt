@@ -27,24 +27,24 @@ import com.abdullahhalis.overlai.presentation.overlay.component.LoadingOverlay
 
 @Composable
 fun TranslationOverlay(
-    state: OverlayState,
+    state: OverlayUIState,
     onDismiss: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     when (state) {
-        is OverlayState.Idle  -> {}
-        is OverlayState.Loading -> {
+        is OverlayUIState.Idle  -> {}
+        is OverlayUIState.Loading -> {
             LoadingOverlay()
         }
-        is OverlayState.Success -> {
+        is OverlayUIState.Success -> {
             ResultOverlay(
                 results = state.results,
                 onDismiss = onDismiss,
                 modifier
             )
         }
-        is OverlayState.Error -> {
+        is OverlayUIState.Error -> {
             ErrorOverlay(
                 message = state.message,
                 onDismiss = onDismiss,

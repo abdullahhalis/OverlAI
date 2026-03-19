@@ -14,6 +14,7 @@ sealed class Screen(val route: String) {
 
 @Composable
 fun NavGraph(
+    isOverlayRunning: Boolean,
     onStartOverlay: () -> Unit,
     onStopOverlay: () -> Unit,
     modifier: Modifier = Modifier,
@@ -25,6 +26,7 @@ fun NavGraph(
     ) {
         composable(Screen.Main.route) {
             MainScreen(
+                isOverlayRunning,
                 onStartOverlay,
                 onStopOverlay,
                 modifier

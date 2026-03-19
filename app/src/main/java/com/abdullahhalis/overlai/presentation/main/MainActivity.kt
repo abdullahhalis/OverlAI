@@ -14,10 +14,16 @@ import androidx.core.net.toUri
 import com.abdullahhalis.overlai.presentation.navigation.NavGraph
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
 import com.abdullahhalis.overlai.service.OverlayService
+import com.abdullahhalis.overlai.service.OverlayServiceState
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
+import androidx.compose.runtime.collectAsState
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var overlayServiceState: OverlayServiceState
 
     private val overlayPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -40,8 +46,11 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val isOverlayRunning = overlayServiceState.isRunning.collectAsState()
+
             OverlAITheme {
                 NavGraph(
+                    isOverlayRunning = isOverlayRunning.value,
                     onStartOverlay = { checkAndStartOverlay() },
                     onStopOverlay = { stopOverlayService() }
                 )

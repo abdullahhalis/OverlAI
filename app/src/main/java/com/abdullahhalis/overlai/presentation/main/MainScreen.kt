@@ -30,9 +30,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,13 +47,12 @@ import com.abdullahhalis.overlai.utils.TranslationLanguage
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScreen(
+    isOverlayRunning: Boolean,
     onStartOverlay: () -> Unit,
     onStopOverlay: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MainViewModel = hiltViewModel(),
 ) {
-    var isOverlay by remember { mutableStateOf(false) }
-
     val sourceLanguage by viewModel.sourceLanguage.collectAsState()
     val targetLanguage by viewModel.targetLanguage.collectAsState()
 
@@ -129,12 +125,9 @@ fun MainScreen(
             }
             Spacer(modifier = Modifier.height(24.dp))
             Button(
-                onClick = {
-                    onStartOverlay()
-                    isOverlay = true
-                },
+                onClick = onStartOverlay,
                 shape = RoundedCornerShape(8.dp),
-                enabled = !isOverlay,
+                enabled = !isOverlayRunning,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
@@ -161,12 +154,9 @@ fun MainScreen(
             Spacer(modifier = Modifier.height(12.dp))
 
             Button(
-                onClick = {
-                    onStopOverlay()
-                    isOverlay = false
-                },
+                onClick = onStopOverlay,
                 shape = RoundedCornerShape(8.dp),
-                enabled = isOverlay,
+                enabled = isOverlayRunning,
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
