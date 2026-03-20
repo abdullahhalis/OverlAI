@@ -20,7 +20,7 @@
         <activity
             android:name=".presentation.main.MainActivity"
             android:exported="true"
-            android:theme="@style/Theme.OverlAI">
+            android:theme="@style/Theme.OverlAI.Starting">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 

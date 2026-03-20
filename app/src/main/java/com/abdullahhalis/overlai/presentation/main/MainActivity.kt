@@ -10,20 +10,24 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.runtime.collectAsState
 import androidx.core.net.toUri
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.abdullahhalis.overlai.presentation.navigation.NavGraph
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
 import com.abdullahhalis.overlai.service.OverlayService
 import com.abdullahhalis.overlai.service.OverlayServiceState
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
-import androidx.compose.runtime.collectAsState
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var overlayServiceState: OverlayServiceState
+
+    private val splashViewModel: SplashViewModel by viewModels()
 
     private val overlayPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -43,6 +47,9 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { !splashViewModel.isReady.value }
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
