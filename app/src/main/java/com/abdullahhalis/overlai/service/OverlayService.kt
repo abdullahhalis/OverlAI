@@ -20,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.abdullahhalis.overlai.data.local.entity.TranslationHistoryEntity
 import com.abdullahhalis.overlai.data.repository.AppRepository
 import com.abdullahhalis.overlai.presentation.main.MainActivity
 import com.abdullahhalis.overlai.presentation.overlay.FloatingBubble
@@ -299,6 +300,17 @@ class OverlayService : Service() {
                 if (translationResults.isEmpty()) {
                     overlayState.value = OverlayUIState.Error("Translation failed")
                     return@launch
+                }
+
+                translationResults.forEach { result ->
+                    appRepository.insertHistory(
+                        TranslationHistoryEntity(
+                            originalText = result.originalText,
+                            translatedText = result.translatedText,
+                            sourceLanguage = sourceLanguage.name,
+                            targetLanguage = targetLanguage.name
+                        )
+                    )
                 }
 
                 overlayState.value = OverlayUIState.Success(translationResults)

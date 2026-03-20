@@ -177,7 +177,6 @@ fun MainScreen(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         "Stop Overlay",
-                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
