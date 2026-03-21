@@ -1,6 +1,9 @@
 package com.abdullahhalis.overlai.presentation.history
 
 import android.util.Log
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -13,7 +16,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
@@ -21,6 +23,7 @@ import androidx.compose.material.icons.outlined.HistoryToggleOff
 import androidx.compose.material.icons.outlined.RocketLaunch
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -43,16 +46,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.paging.LoadState
+import androidx.paging.compose.LazyPagingItems
+import androidx.paging.compose.collectAsLazyPagingItems
 import com.abdullahhalis.overlai.data.local.entity.TranslationHistoryEntity
 import com.abdullahhalis.overlai.presentation.history.component.HistoryItem
-import com.abdullahhalis.overlai.presentation.ui.common.ErrorScreen
 import com.abdullahhalis.overlai.presentation.ui.common.LoadingScreen
-import com.abdullahhalis.overlai.presentation.ui.common.UiState
-import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
+import com.abdullahhalis.overlai.utils.HistoryListItem
 
 @Composable
 fun HistoryScreen(
@@ -60,7 +62,7 @@ fun HistoryScreen(
     modifier: Modifier = Modifier,
     viewModel: HistoryViewModel = hiltViewModel()
 ) {
-    val historyUiState by viewModel.historyUiState.collectAsStateWithLifecycle()
+    val historyPagingItems = viewModel.historyPagingData.collectAsLazyPagingItems()
 
     val snackbarHostState = remember { SnackbarHostState() }
     var showDeleteAllDialog by remember { mutableStateOf(false) }
@@ -76,9 +78,7 @@ fun HistoryScreen(
             Log.d("History", "snackbar result: $result")
             if (result == SnackbarResult.ActionPerformed) {
                 Log.d("History", "undo triggered")
-                viewModel.undoDelete()
-            } else {
-                viewModel.confirmDelete()
+                viewModel.undoDelete(deletedEntity)
             }
         }
     }
@@ -105,10 +105,10 @@ fun HistoryScreen(
     }
 
     HistoryContent(
-        historyUiState,
+        historyPagingItems,
         snackbarHostState,
         onDelete = { showDeleteAllDialog = true },
-        onSwipeToDelete = { viewModel.removeFromUi(it) },
+        onSwipeToDelete = { viewModel.delete(it) },
         navigateToMain,
         modifier
     )
@@ -117,7 +117,7 @@ fun HistoryScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryContent(
-    historyUiState: UiState<Map<String, List<TranslationHistoryEntity>>>,
+    historyPagingItems: LazyPagingItems<HistoryListItem>,
     snackbarHostState: SnackbarHostState,
     onDelete: () -> Unit,
     onSwipeToDelete: (TranslationHistoryEntity) -> Unit,
@@ -132,7 +132,7 @@ fun HistoryContent(
                     Text("History", fontWeight = FontWeight.Bold)
                 },
                 actions = {
-                    if (historyUiState is UiState.Success && historyUiState.data.isNotEmpty()) {
+                    if (historyPagingItems.itemCount > 0) {
                         TextButton(onClick = onDelete) {
                             Text("Clear All")
                         }
@@ -152,103 +152,125 @@ fun HistoryContent(
             )
         }
     ) { innerPadding ->
-        when (historyUiState) {
-            is UiState.Loading -> {
+        when {
+            historyPagingItems.loadState.refresh is LoadState.Loading &&
+                    historyPagingItems.itemCount == 0 -> {
                 LoadingScreen(modifier.padding(innerPadding))
             }
-            is UiState.Success -> {
-                if (historyUiState.data.isEmpty()) {
-                    Box(
-                        modifier = modifier.fillMaxSize().padding(innerPadding),
-                        contentAlignment = Alignment.Center
+
+            historyPagingItems.itemCount == 0 -> {
+                Box(
+                    modifier = modifier.fillMaxSize().padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        Column(
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                        Icon(
+                            imageVector = Icons.Outlined.HistoryToggleOff,
+                            contentDescription = null,
+                            modifier = Modifier.size(96.dp)
+                        )
+                        Text(
+                            text = "No History Yet",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Text(
+                            text = "Your translated phrases will appear here once you start translating using the overlay",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
+                        )
+                        Button(
+                            onClick = navigateToMain,
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.padding(top = 24.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.Outlined.HistoryToggleOff,
-                                contentDescription = null,
-                                modifier = Modifier.size(96.dp)
-                            )
-                            Text(
-                                text = "No History Yet",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            Text(
-                                text = "Your translated phrases will appear here once you start translating using the overlay",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                                textAlign = TextAlign.Center,
-                                modifier = Modifier.fillMaxWidth().padding(horizontal = 24.dp)
-                            )
-                            Button(
-                                onClick = navigateToMain,
-                                shape = RoundedCornerShape(8.dp),
-                                modifier = Modifier.padding(top = 24.dp)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.Center
                             ) {
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically,
-                                    horizontalArrangement = Arrangement.Center
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.Outlined.RocketLaunch,
-                                        contentDescription = "start translating"
-                                    )
-                                    Spacer(Modifier.width(8.dp))
-                                    Text(
-                                        "Start Translating",
-                                    )
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp),
-                        modifier = modifier
-                            .fillMaxSize()
-                            .padding(innerPadding)
-                    ) {
-                        historyUiState.data.forEach { (dataLabel, entities) ->
-                            item {
-                                Text(
-                                    text = dataLabel,
-                                    style = MaterialTheme.typography.labelLarge,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.padding(vertical = 8.dp)
+                                Icon(
+                                    imageVector = Icons.Outlined.RocketLaunch,
+                                    contentDescription = "start translating"
                                 )
-                            }
-                            items(
-                                items = entities,
-                                key = { it.id }
-                            ) { entity ->
-                                HistoryItem(entity, onDelete = { onSwipeToDelete(entity) }, modifier = Modifier.animateItem())
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    "Start Translating",
+                                )
                             }
                         }
                     }
                 }
             }
-            is UiState.Error -> {
-                ErrorScreen(historyUiState.message, modifier = modifier.padding(innerPadding))
+
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp),
+                    modifier = modifier
+                        .fillMaxSize()
+                        .padding(innerPadding)
+                ) {
+                    items(
+                        count = historyPagingItems.itemCount,
+                        key = { index ->
+                            when (val item = historyPagingItems.peek(index)) {
+                                is HistoryListItem.Item -> item.entity.id
+                                is HistoryListItem.Separator -> "sep_${item.label}_$index"
+                                null -> "null_$index"
+                            }
+                        },
+                        contentType = { index ->
+                            historyPagingItems.peek(index)?.let { it::class.simpleName } ?: "null"
+                        }
+                    ) { index ->
+                        val animatedModifier = Modifier.animateItem(
+                            fadeInSpec = tween(durationMillis = 300),
+                            fadeOutSpec = tween(durationMillis = 200),
+                            placementSpec = spring(
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        )
+
+                        when (val item = historyPagingItems[index]) {
+                            is HistoryListItem.Item -> {
+                                HistoryItem(
+                                    historyEntity = item.entity,
+                                    onDelete = { onSwipeToDelete(item.entity) },
+                                    modifier = animatedModifier
+                                )
+                            }
+                            is HistoryListItem.Separator -> {
+                                Text(
+                                    text = item.label,
+                                    style = MaterialTheme.typography.labelLarge,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = animatedModifier
+                                        .padding(vertical = 8.dp)
+                                )
+                            }
+                            else -> {}
+                        }
+                    }
+
+                    if (historyPagingItems.loadState.append is LoadState.Loading) {
+                        item {
+                            Box(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp))
+                            }
+                        }
+
+                    }
+                }
             }
         }
-    }
-}
-
-@Preview
-@Composable
-private fun HistoryScreenPrev() {
-    OverlAITheme(darkTheme = false) {
-        HistoryContent(
-            historyUiState = UiState.Success(emptyMap()),
-            SnackbarHostState(),
-            {},
-            {},
-            {}
-        )
     }
 }

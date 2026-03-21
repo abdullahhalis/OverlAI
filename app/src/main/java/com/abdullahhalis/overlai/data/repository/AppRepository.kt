@@ -1,5 +1,8 @@
 package com.abdullahhalis.overlai.data.repository
 
+import androidx.paging.Pager
+import androidx.paging.PagingConfig
+import androidx.paging.PagingData
 import com.abdullahhalis.overlai.data.local.AppPreferences
 import com.abdullahhalis.overlai.data.local.dao.TranslationHistoryDao
 import com.abdullahhalis.overlai.data.local.entity.TranslationHistoryEntity
@@ -25,11 +28,20 @@ class AppRepository @Inject constructor(
         appPreferences.setTargetLanguage(language)
     }
 
-    fun getHistory(): Flow<List<TranslationHistoryEntity>> = dao.getAll()
+    fun getHistoryPaged(): Flow<PagingData<TranslationHistoryEntity>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 10,
+                prefetchDistance = 5,
+                false
+            ),
+            pagingSourceFactory = { dao.getPaged() }
+        ).flow
+    }
 
     suspend fun insertHistory(entity: TranslationHistoryEntity) = dao.insert(entity)
 
-    suspend fun deleteHistoryById(id: Long) = dao.deleteHistoryById(id)
+    suspend fun deleteHistory(entity: TranslationHistoryEntity) = dao.deleteHistory(entity)
 
     suspend fun deleteAllHistory() = dao.deleteAllHistory()
 }
