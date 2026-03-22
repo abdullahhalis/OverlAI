@@ -19,6 +19,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.platform.ComposeView
 import androidx.lifecycle.setViewTreeLifecycleOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
+import com.abdullahhalis.overlai.R
 import com.abdullahhalis.overlai.data.local.entity.TranslationHistoryEntity
 import com.abdullahhalis.overlai.data.repository.AppRepository
 import com.abdullahhalis.overlai.presentation.main.MainActivity
@@ -328,6 +329,7 @@ class OverlayService : Service() {
         return Notification.Builder(this, channelId)
             .setContentTitle("OverlAI is Active")
             .setContentText("Tap bubble to capture")
+            .setSmallIcon(R.drawable.ic_overlai)
             .setContentIntent(pendingIntent)
             .build()
     }
