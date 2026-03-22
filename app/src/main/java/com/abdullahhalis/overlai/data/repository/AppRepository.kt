@@ -19,6 +19,7 @@ class AppRepository @Inject constructor(
 ) {
     val sourceLanguage: Flow<OcrLanguage> = appPreferences.sourceLanguage
     val targetLanguage: Flow<TranslationLanguage> = appPreferences.targetLanguage
+    val isOnboardingCompleted: Flow<Boolean> = appPreferences.isOnboardingCompleted
 
     suspend fun setSourceLanguage(language: OcrLanguage) {
         appPreferences.setSourceLanguage(language)
@@ -26,6 +27,10 @@ class AppRepository @Inject constructor(
 
     suspend fun setTargetLanguage(language: TranslationLanguage) {
         appPreferences.setTargetLanguage(language)
+    }
+
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        appPreferences.setOnboardingCompleted(completed)
     }
 
     fun getHistoryPaged(): Flow<PagingData<TranslationHistoryEntity>> {

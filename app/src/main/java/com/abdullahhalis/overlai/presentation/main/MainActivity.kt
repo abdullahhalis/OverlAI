@@ -11,9 +11,10 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.abdullahhalis.overlai.presentation.navigation.NavGraph
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
 import com.abdullahhalis.overlai.service.OverlayService
@@ -53,11 +54,13 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val isOverlayRunning = overlayServiceState.isRunning.collectAsState()
+            val isOverlayRunning by overlayServiceState.isRunning.collectAsStateWithLifecycle()
+            val isOnboardingCompleted by splashViewModel.isOnboardingCompleted.collectAsStateWithLifecycle()
 
             OverlAITheme {
                 NavGraph(
-                    isOverlayRunning = isOverlayRunning.value,
+                    isOnboardingComplete = isOnboardingCompleted,
+                    isOverlayRunning = isOverlayRunning,
                     onStartOverlay = { checkAndStartOverlay() },
                     onStopOverlay = { stopOverlayService() }
                 )

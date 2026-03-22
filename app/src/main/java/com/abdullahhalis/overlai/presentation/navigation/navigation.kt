@@ -19,14 +19,17 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.abdullahhalis.overlai.presentation.history.HistoryScreen
 import com.abdullahhalis.overlai.presentation.main.MainScreen
+import com.abdullahhalis.overlai.presentation.onboarding.OnboardingScreen
 
 sealed class Screen(val route: String) {
+    object Onboarding: Screen("onboarding")
     object Main: Screen("main")
     object History: Screen("history")
 }
 
 @Composable
 fun NavGraph(
+    isOnboardingComplete: Boolean,
     isOverlayRunning: Boolean,
     onStartOverlay: () -> Unit,
     onStopOverlay: () -> Unit,
@@ -37,26 +40,33 @@ fun NavGraph(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
+    val startDestination = if (isOnboardingComplete)
+        Screen.Main.route
+    else
+        Screen.Onboarding.route
+
     Scaffold(
         bottomBar = {
-            NavigationBar {
-                bottomNavItem.forEach { item ->
-                    NavigationBarItem(
-                        selected = currentRoute == item.route,
-                        onClick = {
-                            navController.navigate(item.route) {
-                                popUpTo(Screen.Main.route) { saveState = true }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        },
-                        icon = { Icon(item.icon, item.label) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = MaterialTheme.colorScheme.primary,
+            if (currentRoute != Screen.Onboarding.route) {
+                NavigationBar {
+                    bottomNavItem.forEach { item ->
+                        NavigationBarItem(
+                            selected = currentRoute == item.route,
+                            onClick = {
+                                navController.navigate(item.route) {
+                                    popUpTo(Screen.Main.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            icon = { Icon(item.icon, item.label) },
+                            colors = NavigationBarItemDefaults.colors(
+                                selectedIconColor = MaterialTheme.colorScheme.primary,
 
-                        ),
-                        label = { Text(item.label) }
-                    )
+                                ),
+                            label = { Text(item.label) }
+                        )
+                    }
                 }
             }
         },
@@ -64,9 +74,18 @@ fun NavGraph(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Screen.Main.route,
+            startDestination = startDestination,
             modifier = modifier.padding(innerPadding)
         ) {
+            composable(Screen.Onboarding.route) {
+                OnboardingScreen(
+                    onFinish = {
+                        navController.navigate(Screen.Main.route) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Screen.Main.route) {
                 MainScreen(
                     isOverlayRunning,

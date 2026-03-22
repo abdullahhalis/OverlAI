@@ -3,6 +3,7 @@ package com.abdullahhalis.overlai.data.local
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
@@ -30,6 +31,10 @@ class AppPreferences @Inject constructor(
         TranslationLanguage.valueOf(value)
     }
 
+    val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[KEY_ONBOARDING_COMPLETED] ?: false
+    }
+
     suspend fun setSourceLanguage(language: OcrLanguage) {
         context.dataStore.edit { prefs ->
             prefs[KEY_SOURCE_LANGUAGE] = language.name
@@ -42,8 +47,15 @@ class AppPreferences @Inject constructor(
         }
     }
 
+    suspend fun setOnboardingCompleted(completed: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[KEY_ONBOARDING_COMPLETED] = completed
+        }
+    }
+
     companion object{
         private val KEY_SOURCE_LANGUAGE = stringPreferencesKey("source_language")
         private val KEY_TARGET_LANGUAGE = stringPreferencesKey("target_language")
+        private val KEY_ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 }
