@@ -1,6 +1,5 @@
 package com.abdullahhalis.overlai.service
 
-import android.util.Log
 import com.abdullahhalis.overlai.data.model.OcrResult
 import com.abdullahhalis.overlai.data.model.TranslationResult
 import com.abdullahhalis.overlai.utils.OcrLanguage
@@ -54,8 +53,7 @@ class TranslationManager @Inject constructor() {
                             )
                         )
                     }
-                    .addOnFailureListener { e ->
-                        Log.e(TranslationManager::class.java.simpleName, "Translation failed: ${e.message}")
+                    .addOnFailureListener {
                         continuation.resume(
                             TranslationResult(
                                 ocrResult.text,

@@ -4,7 +4,6 @@ import android.content.Intent
 import android.media.projection.MediaProjectionManager
 import android.os.Bundle
 import android.provider.Settings
-import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -39,7 +38,6 @@ class MainActivity : ComponentActivity() {
     private val capturePermissionLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        Log.d("MainActivity", "resultCode: ${result.resultCode}, data: ${result.data}")
         if (result.resultCode == RESULT_OK && result.data != null) {
             startOverlayService(result.resultCode, result.data!!)
         } else {
@@ -90,7 +88,6 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startOverlayService(resultCode: Int, data: Intent) {
-        Log.d("MainActivity", "startOverlayService - resultCode: $resultCode")
         val intent = Intent(this, OverlayService::class.java).apply {
             putExtra(OverlayService.EXTRA_RESULT_CODE, resultCode)
             putExtra(OverlayService.EXTRA_RESULT_DATA, data)

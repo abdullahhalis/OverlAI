@@ -1,7 +1,6 @@
 package com.abdullahhalis.overlai.utils
 
 import android.graphics.Rect
-import android.util.Log
 import com.abdullahhalis.overlai.data.model.OcrResult
 
 fun List<OcrResult>.mergeBlocks(
@@ -28,7 +27,6 @@ fun List<OcrResult>.mergeBlocks(
             val candidateBox = candidate.boundingBox ?: return@forEachIndexed
 
             val result = isSameGroup(expandingBox, candidateBox)
-            Log.d("MergeBlocks", "i=$i j=$j | expanding=${expandingBox} | candidate=${candidateBox} | merge=$result")
 
             if (result) {
                 group.add(candidate)
@@ -39,7 +37,6 @@ fun List<OcrResult>.mergeBlocks(
                     maxOf(expandingBox.right, candidateBox.right),
                     maxOf(expandingBox.bottom, candidateBox.bottom)
                 )
-                Log.d("MergeBlocks", "expanded to: $expandingBox")
             }
         }
 
@@ -58,10 +55,6 @@ fun List<OcrResult>.mergeHorizontalBlocks(
     verticalThreshold: Int
 ): List<OcrResult> {
     val sorted = sortedBy { it.boundingBox?.top ?: 0 }
-
-    sorted.forEach {
-        Log.d("MergeDebug", "block: '${it.text}' box: ${it.boundingBox}")
-    }
 
     return mergeBlocks(
         sorted = sorted,
@@ -83,10 +76,6 @@ fun List<OcrResult>.mergeVerticalBlocks(
     verticalThreshold: Int
 ): List<OcrResult> {
     val sorted = sortedByDescending { it.boundingBox?.right ?: 0 }
-
-    sorted.forEach {
-        Log.d("MergeDebug", "block: '${it.text}' box: ${it.boundingBox}")
-    }
 
     return mergeBlocks(
         sorted = sorted,

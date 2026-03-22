@@ -11,7 +11,6 @@ import android.content.Intent
 import android.graphics.PixelFormat
 import android.os.Build
 import android.os.IBinder
-import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
 import android.view.ViewConfiguration
@@ -97,13 +96,8 @@ class OverlayService : Service() {
             intent?.getParcelableExtra(EXTRA_RESULT_DATA)
         }
 
-        Log.d("OverlayService", "onStartCommand - resultCode: $resultCode, resultData: $resultData")
-
         if (resultCode == Activity.RESULT_OK && resultData != null) {
             captureManager.initialize(resultCode, resultData)
-            Log.d("OverlayService", "CaptureManager initialized!")
-        } else {
-            Log.d("OverlayService", "Initialize skipped — resultCode or resultData null!")
         }
 
         return START_NOT_STICKY
@@ -246,7 +240,6 @@ class OverlayService : Service() {
     }
 
     private fun onBubbleTapped() {
-        Log.d(OverlayService::class.java.simpleName, "float button clicked")
         serviceScope.launch {
             if (overlayServiceState.isCapturing.value || overlayServiceState.isTranslating.value) return@launch
 
@@ -264,22 +257,10 @@ class OverlayService : Service() {
                     return@launch
                 }
 
-//                bitmap.saveToGallery(this@OverlayService)
-                Log.d(
-                    OverlayService::class.java.simpleName,
-                    "Capture Success: ${bitmap.width}x${bitmap.height}"
-                )
-
                 val sourceLanguage = appRepository.sourceLanguage.first()
                 val targetLanguage = appRepository.targetLanguage.first()
 
                 val ocrResult = ocrManager.recognize(bitmap, sourceLanguage)
-                ocrResult.forEach { result ->
-                    Log.d(
-                        OverlayService::class.java.simpleName,
-                        "OCR: ${result.text} at ${result.boundingBox}"
-                    )
-                }
 
                 if (ocrResult.isEmpty()) {
                     overlayState.value = OverlayUIState.Error("No Text detected")
@@ -290,12 +271,6 @@ class OverlayService : Service() {
 
                 val translationResults =
                     translationManager.translate(ocrResult, sourceLanguage, targetLanguage)
-                translationResults.forEach { result ->
-                    Log.d(
-                        OverlayService::class.java.simpleName,
-                        "Translated: ${result.originalText} -> ${result.translatedText}"
-                    )
-                }
 
                 if (translationResults.isEmpty()) {
                     overlayState.value = OverlayUIState.Error("Translation failed")
@@ -316,7 +291,6 @@ class OverlayService : Service() {
                 overlayState.value = OverlayUIState.Success(translationResults)
 
             } catch (e: Exception) {
-                Log.e(OverlayService::class.java.simpleName, "Error: ${e.message}")
                 overlayState.value = OverlayUIState.Error(e.message ?: "Unknown Error")
             } finally {
                 overlayServiceState.setTranslating(false)

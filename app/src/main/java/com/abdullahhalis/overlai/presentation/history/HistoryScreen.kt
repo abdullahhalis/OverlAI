@@ -1,6 +1,5 @@
 package com.abdullahhalis.overlai.presentation.history
 
-import android.util.Log
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -69,15 +68,12 @@ fun HistoryScreen(
 
     LaunchedEffect(Unit) {
         viewModel.deleteEvent.collect { deletedEntity ->
-            Log.d("History", "deleteEvent received: ${deletedEntity.id}")
             val result = snackbarHostState.showSnackbar(
                 message = "Translation deleted",
                 actionLabel = "Undo",
                 duration = SnackbarDuration.Short
             )
-            Log.d("History", "snackbar result: $result")
             if (result == SnackbarResult.ActionPerformed) {
-                Log.d("History", "undo triggered")
                 viewModel.undoDelete(deletedEntity)
             }
         }

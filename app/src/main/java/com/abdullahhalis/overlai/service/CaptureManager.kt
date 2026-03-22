@@ -13,7 +13,6 @@ import android.os.Build
 import android.os.Handler
 import android.os.Looper
 import android.util.DisplayMetrics
-import android.util.Log
 import android.view.WindowInsets
 import android.view.WindowManager
 import com.abdullahhalis.overlai.utils.toBitmap
@@ -90,7 +89,6 @@ class CaptureManager @Inject constructor(
     }
 
     fun captureScreen(): Bitmap? {
-        Log.d("CaptureManager", "captureScreen called ")
         if (mediaProjection == null || virtualDisplay == null) return null
 
         val image = imageReader?.acquireLatestImage() ?: return null
