@@ -36,7 +36,7 @@ class AppRepository @Inject constructor(
     fun getHistoryPaged(): Flow<PagingData<TranslationHistoryEntity>> {
         return Pager(
             config = PagingConfig(
-                pageSize = 10,
+                pageSize = 20,
                 prefetchDistance = 5,
                 false
             ),
