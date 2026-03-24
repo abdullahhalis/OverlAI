@@ -75,7 +75,11 @@ fun NavGraph(
         NavHost(
             navController = navController,
             startDestination = startDestination,
-            modifier = modifier.padding(innerPadding)
+            modifier = modifier.padding(innerPadding),
+            enterTransition = NavAnimation.enter,
+            exitTransition = NavAnimation.exit,
+            popEnterTransition = NavAnimation.popEnter,
+            popExitTransition = NavAnimation.popExit
         ) {
             composable(Screen.Onboarding.route) {
                 OnboardingScreen(
