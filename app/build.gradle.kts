@@ -32,6 +32,16 @@ android {
             )
         }
     }
+
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a")
+            isUniversalApk = true
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
@@ -87,7 +97,7 @@ dependencies {
     implementation(libs.androidx.room.paging)
 
     implementation(libs.mlkit.text.recognition)
-    implementation(libs.mlkit.text.recognition.japanase)
+    implementation(libs.mlkit.text.recognition.japanese)
     implementation(libs.mlkit.text.recognition.korean)
     implementation(libs.mlkit.text.recognition.chinese)
 

@@ -21,6 +21,7 @@ navigationCompose = "2.9.7"
 splashscreen = "1.2.0"
 paging = "3.4.2"
 
+mlkitTextRecognitionLatin = "19.0.1"
 mlkitTextRecognition = "16.0.1"
 mlkitTranslate = "17.0.3"
 mlkitLanguageId = "17.0.6"
@@ -58,10 +59,10 @@ coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coi
 
 androidx-compose-material-icons-extended = { module = "androidx.compose.material:material-icons-extended", version.ref = "materialIconsExtended" }
 
-mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition"}
-mlkit-text-recognition-japanase = { group = "com.google.mlkit", name = "text-recognition-japanese", version.ref = "mlkitTextRecognition"}
-mlkit-text-recognition-korean = { group = "com.google.mlkit", name = "text-recognition-korean", version.ref = "mlkitTextRecognition"}
-mlkit-text-recognition-chinese = { group = "com.google.mlkit", name = "text-recognition-chinese", version.ref = "mlkitTextRecognition"}
+mlkit-text-recognition = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition", version.ref = "mlkitTextRecognitionLatin"}
+mlkit-text-recognition-japanese = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition-japanese", version.ref = "mlkitTextRecognition"}
+mlkit-text-recognition-korean = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition-korean", version.ref = "mlkitTextRecognition"}
+mlkit-text-recognition-chinese = { group = "com.google.android.gms", name = "play-services-mlkit-text-recognition-chinese", version.ref = "mlkitTextRecognition" }
 
 mlkit-translate = { group = "com.google.mlkit", name = "translate", version.ref = "mlkitTranslate"}
 mlkit-language-id = { group = "com.google.mlkit", name = "language-id", version.ref = "mlkitLanguageId"}
