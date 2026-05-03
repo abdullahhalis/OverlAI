@@ -1,12 +1,10 @@
 # OverlAI — AI Overlay Translator
 
 ![Platform](https://img.shields.io/badge/Platform-Android-brightgreen)
-![Min SDK](https://img.shields.io/badge/minSdk-26-blue)
 ![Kotlin](https://img.shields.io/badge/Kotlin-purple)
 ![UI](https://img.shields.io/badge/UI-Jetpack%20Compose-orange)
 ![Architecture](https://img.shields.io/badge/Architecture-MVVM-red)
 ![AI](https://img.shields.io/badge/AI-ML%20Kit-yellow)
-![On Device](https://img.shields.io/badge/AI-On--Device-success)
 ![Overlay](https://img.shields.io/badge/System-Overlay-important)
 
 > Translate Anything on Your Screen without switching apps.
@@ -38,46 +36,83 @@ OverlAI is an Android floating overlay app that captures on-screen text, perform
 - [ ] Model management
 
 ---
+## 📱 Preview
+
+### Demo
+
+![demo](docs/demo/demo.gif)
+
+### Screenshots
+
+|Home Screen|Translation Overlay|History Screen|
+|:---------:|:-----------------:|:------------:|
+| <img src="docs/screenshots/home.jpg" width="250"> | <img src="docs/screenshots/translation.jpg" width="250"> | <img src="docs/screenshots/history.jpg" width="250"> |
+
+---
+
+## 🗺️ How It Works
+
+```mermaid
+flowchart TD
+
+  subgraph User_Action
+    A[Tap Floating Bubble]
+    J[Dismiss Overlay]
+  end
+
+  subgraph Processing
+    B[Hide Bubble]
+    C[Capture Screen]
+    D[Crop Bitmap]
+    E[OCR Process]
+    F[Merge Text Blocks]
+    G[Translate Text]
+  end
+
+  subgraph Storage_Render
+    H[Save to Room]
+    I[Render Overlay]
+  end
+
+  A --> B --> C --> D --> E --> F --> G --> H --> I --> J
+```
+---
 
 ## 🏗️ Architecture
 
-OverlAI follows **Clean Architecture** principles without a domain layer, repositories are injected directly into ViewModels for simplicity.
+OverlAI follows Clean Architecture principles without a domain layer, repositories are injected directly into ViewModels for simplicity.
 
+```mermaid
+flowchart TB
+
+  subgraph Presentation_Layer["Presentation Layer"]
+    UI[Compose UI]
+    VM[ViewModels]
+    NAV[NavGraph]
+    ACT[MainActivity]
+  end
+
+  subgraph Service_Layer["Service Layer"]
+    SRV[OverlayService]
+    OCR[OcrManager]
+    CAP[CaptureManager]
+    TR[TranslationManager]
+  end
+
+  subgraph Data_Layer["Data Layer"]
+    REPO[Repository]
+    DB[(Room DB)]
+    DS[(DataStore)]
+  end
+
+  UI --> VM
+  VM --> SRV
+  SRV --> REPO
+  REPO --> DB
+  REPO --> DS
 ```
-┌─────────────────────────────────────┐
-│           Presentation Layer        │
-│  MainActivity · NavGraph · Screens  │
-│  ViewModels · Jetpack Compose UI    │
-└────────────────┬────────────────────┘
-                 │
-┌────────────────▼────────────────────┐
-│            Service Layer            │
-│  OverlayService · CaptureManager    │
-│  OcrManager · TranslationManager    │
-│  OverlayServiceState                │
-└────────────────-────────────────────┘
-                 │
-┌────────────────▼────────────────────┐
-│              Data Layer             │
-│  AppRepository · AppPreferences     │
-│  Room Database · DataStore          │
-└─────────────────────────────────────┘
-```
+
 The service layer isolates long-running overlay and capture operations from UI lifecycle to prevent Activity-related crashes.
-
-### Key Technical Decisions
-
-|    Decision    | Choice                                 | Reason                                 |
-|:--------------:|:---------------------------------------|:---------------------------------------|
-|       UI       | Jetpack Compose + Material 3           | Modern declarative UI                  |                
-|       DI       | Hilt                                   | Industry standard, compile-time safety |
-|     Async      | Coroutines + Flow                      | Structured concurrency                 |
-|      OCR       | ML Kit Text Recognition                | On-device, free, multi-script support  |
-|  Translation   | ML Kit Translate                       | On-device, no API key needed           |
-|    Overlay     | WindowManager TYPE_APPLICATION_OVERLAY | System-level floating window           |
-| Screen Capture | MediaProjection API                    | Official Android screen capture API    |
-|       DB       | Room + Paging 3                        | Efficient paginated history            |
-|     Prefs      | DataStore                              | Coroutine-friendly, type-safe          |
 
 ---
 
@@ -88,38 +123,40 @@ The service layer isolates long-running overlay and capture operations from UI l
 - **Architecture** : MVVM + Clean Architecture (no domain layer)
 - **DI** : Hilt
 - **ML** : ML Kit Text Recognition + ML Kit Translate
-- **Screen Capture** : MediaProjection API
-- **Overlay** : WindowManager `TYPE_APPLICATION_OVERLAY`
 - **Database** : Room + Paging 3
 - **Preferences** : DataStore
 - **Build** : AGP, Kotlin DSL
 
+### Key Technical Decisions
+
+|    Decision    | Choice                                 | Reason                                 |
+|:--------------:|:---------------------------------------|:---------------------------------------|
+|       UI       | Jetpack Compose + Material 3           | Modern declarative UI                  |                
+|       DI       | Hilt                                   | Industry standard, compile-time safety |
+|     Async      | Coroutines + Flow                      | Structured concurrency                 |
+|      OCR       | ML Kit Text Recognition                | On-device, free, multi-script support  |
+|  Translation   | ML Kit Translate                       | On-device, no API key needed           |
+|       DB       | Room + Paging 3                        | Efficient paginated history            |
+|     Prefs      | DataStore                              | Coroutine-friendly, type-safe          |
+
 ---
+## 🧩 Technical Challenges
 
-## 🗺️ How It Works
+### Screenshot noise from system UI (status bar & floating bubble)
+- **Problem**: Captured screenshots included system UI elements, introducing noise that degraded OCR accuracy.
+- **Solution**: Temporarily hid the floating bubble before capture and cropped the status bar area from the bitmap prior to OCR processing.
 
-```
-User taps floating bubble
-        ↓
-Bubble hides (100ms delay for clean capture)
-        ↓
-CaptureManager captures screen via MediaProjection
-        ↓
-Bitmap cropped (status bar area removed)
-        ↓
-OcrManager processes bitmap via ML Kit Text Recognition
-        ↓
-OCR blocks merged by proximity (vertical/horizontal aware)
-        ↓
-TranslationManager translates each block via ML Kit Translate
-        ↓
-Translation results saved to Room database
-        ↓
-TranslationOverlay renders translated bubbles over original text
-        ↓
-User taps anywhere to dismiss
-```
+### MediaProjection lifecycle limitations
+- **Problem**: Android restricts MediaProjection to a single active VirtualDisplay, leading to potential conflicts and capture failures.
+- **Solution**: Implemented strict lifecycle management and synchronization to ensure only one active capture session at a time.
 
+### Vertical Japanese text reconstruction
+- **Problem**: ML Kit returns fragmented OCR blocks, especially for vertical Japanese text, breaking reading order.
+- **Solution**: Developed a custom proximity-based merging algorithm to reconstruct logical reading sequences (vertical & horizontal aware).
+
+### Overlay touch interaction conflicts
+- **Problem**: Overlay windows can block interaction with underlying apps if not configured properly.
+- **Solution**: Dynamically adjusted window flags to toggle between touchable and non-touchable states based on interaction context.
 ---
 
 ## ⚠️ Known Limitations
@@ -130,36 +167,6 @@ User taps anywhere to dismiss
 - **Dense text** : Not optimized for paragraph-heavy content, best suited for manga/manhwa speech bubbles
 - **Translation quality** : ML Kit uses English as a pivot language (JP → EN → ID), which may reduce quality slightly vs. direct translation APIs
 - **Single VirtualDisplay** : Android restricts MediaProjection to one active VirtualDisplay; app requires restart if projection is interrupted
-
----
-
-## ⚙️ Setup & Installation
-
-### Prerequisites
-- Android Studio Panda 1 (2025.3.1) or newer
-- Android device running API 26+ (Android 8.0)
-- **Physical device strongly recommended**, overlay behavior is unreliable on emulator
-
-### Steps
-
-1. Clone the repository
-```bash
-git clone https://github.com/abdullahhalis/OverlAI.git
-```
-
-2. Open in Android Studio
-
-3. Sync Gradle, all dependencies download automatically
-
-4. Run on a physical device
-
-### First Launch
-On first launch, the onboarding flow will explain and request three permissions:
-1. **Display over other apps** : required for the floating overlay
-2. **Screen capture** : required for MediaProjection (requested once per session)
-3. **Notifications** : required to show the overlay status indicator (Android 13+)
-
-> ⚠️ **First translation may take longer**. ML Kit downloads language models (around 30MB per language pair) on first use. Subsequent translations are near-instant.
 
 ---
 <p align="center">Built with ❤️ as an Android portfolio project</p>
