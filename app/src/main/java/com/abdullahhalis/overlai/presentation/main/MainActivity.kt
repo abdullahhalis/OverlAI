@@ -1,47 +1,133 @@
 package com.abdullahhalis.overlai.presentation.main
 
+import android.Manifest
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.media.projection.MediaProjectionManager
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
+import androidx.compose.runtime.getValue
+import androidx.core.content.ContextCompat
+import androidx.core.net.toUri
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.abdullahhalis.overlai.presentation.navigation.NavGraph
 import com.abdullahhalis.overlai.presentation.ui.theme.OverlAITheme
+import com.abdullahhalis.overlai.service.OverlayService
+import com.abdullahhalis.overlai.service.OverlayServiceState
+import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var overlayServiceState: OverlayServiceState
+
+    private val splashViewModel: SplashViewModel by viewModels()
+
+    private val overlayPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) {
+        checkAndStartOverlay()
+    }
+
+    private val capturePermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == RESULT_OK && result.data != null) {
+            startOverlayService(result.resultCode, result.data!!)
+        } else {
+            Toast.makeText(this, "Screen capture permission required", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (!isGranted) {
+            Toast.makeText(
+                this,
+                "Notifications disabled. You won't see the overlay status bar.",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
+        val splashScreen = installSplashScreen()
+        splashScreen.setKeepOnScreenCondition { !splashViewModel.isReady.value }
+
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
+            val isOverlayRunning by overlayServiceState.isRunning.collectAsStateWithLifecycle()
+            val isOnboardingCompleted by splashViewModel.isOnboardingCompleted.collectAsStateWithLifecycle()
+
             OverlAITheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Android",
-                        modifier = Modifier.padding(innerPadding)
-                    )
-                }
+                NavGraph(
+                    isOnboardingComplete = isOnboardingCompleted,
+                    isOverlayRunning = isOverlayRunning,
+                    onStartOverlay = {
+                        requestNotificationPermission()
+                        checkAndStartOverlay()
+                    },
+                    onStopOverlay = { stopOverlayService() }
+                )
             }
         }
     }
-}
 
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
+    private fun requestNotificationPermission() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(
+                    this,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) != PackageManager.PERMISSION_GRANTED
+            ) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+            }
+        }
+    }
 
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    OverlAITheme {
-        Greeting("Android")
+    private fun checkAndStartOverlay() {
+        if (Settings.canDrawOverlays(this)) {
+            requestMediaProjectionPermission()
+        } else {
+            val intent = Intent(
+                Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                "package:$packageName".toUri()
+            )
+            overlayPermissionLauncher.launch(intent)
+        }
+    }
+
+    private fun requestMediaProjectionPermission() {
+        val mediaProjectionManager = getSystemService(
+            MEDIA_PROJECTION_SERVICE
+        ) as MediaProjectionManager
+        capturePermissionLauncher.launch(
+            mediaProjectionManager.createScreenCaptureIntent()
+        )
+    }
+
+    private fun startOverlayService(resultCode: Int, data: Intent) {
+        val intent = Intent(this, OverlayService::class.java).apply {
+            putExtra(OverlayService.EXTRA_RESULT_CODE, resultCode)
+            putExtra(OverlayService.EXTRA_RESULT_DATA, data)
+        }
+        startForegroundService(intent)
+    }
+
+    private fun stopOverlayService() {
+        val intent = Intent(this, OverlayService::class.java)
+        stopService(intent)
     }
 }

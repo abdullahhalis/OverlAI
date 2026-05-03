@@ -2,10 +2,10 @@ package com.abdullahhalis.overlai.presentation.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val Purple80 = Color(0xFFD0BCFF)
-val PurpleGrey80 = Color(0xFFCCC2DC)
-val Pink80 = Color(0xFFEFB8C8)
+val Blue = Color(0xFF4FACFE)
+val deeperBlue = Color(0xFF0077CC)
+val tertiaryBlue = Color(0xFFE8F4FF)
 
-val Purple40 = Color(0xFF6650a4)
-val PurpleGrey40 = Color(0xFF625b71)
-val Pink40 = Color(0xFF7D5260)
+val Teal = Color(0xFF00F2FE)
+val deeperTeal = Color(0xFF00B8C4)
+val tertiaryTeal = Color(0xFF003B3F)
