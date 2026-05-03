@@ -194,7 +194,7 @@ Choose the build that fits your device:
 - Works without Google Play Services
 - Largest size
 
-👉 [overlai-v1.0-bundled.apk](https://github.com/abdullahhalis/OverlAI/releases/download/v1.0/OverlAI-v1.0.0-universal.apk)
+👉 [overlai-v1.0-bundled.apk](https://github.com/abdullahhalis/OverlAI/releases/download/v1.0/OverlAI-v1.0.0-bundled.apk)
 
 ---
 
