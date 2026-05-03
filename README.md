@@ -167,6 +167,45 @@ The service layer isolates long-running overlay and capture operations from UI l
 - **Dense text** : Not optimized for paragraph-heavy content, best suited for manga/manhwa speech bubbles
 - **Translation quality** : ML Kit uses English as a pivot language (JP → EN → ID), which may reduce quality slightly vs. direct translation APIs
 - **Single VirtualDisplay** : Android restricts MediaProjection to one active VirtualDisplay; app requires restart if projection is interrupted
+---
+## 📦 Download
+
+Get the latest version from GitHub Releases:
+
+👉 https://github.com/abdullahhalis/OverlAI/releases/latest
+
+Choose the build that fits your device:
+
+### ARM64 (Recommended)
+- Smaller size
+- Better performance
+- Works on most modern Android devices
+
+👉 [overlai-v1.0-arm64.apk](https://github.com/abdullahhalis/OverlAI/releases/download/v1.0/OverlAI-v1.0.0-arm64-v8a.apk)
+
+### Universal (Fallback)
+- Larger size
+- Supports all devices
+
+👉 [overlai-v1.0-universal.apk](https://github.com/abdullahhalis/OverlAI/releases/download/v1.0/OverlAI-v1.0.0-universal.apk)
+
+### Bundled OCR (Experimental)
+- Includes OCR model inside APK
+- Works without Google Play Services
+- Largest size
+
+👉 [overlai-v1.0-bundled.apk](https://github.com/abdullahhalis/OverlAI/releases/download/v1.0/OverlAI-v1.0.0-universal.apk)
+
+---
+
+### ⚠️ Notes
+On first launch, the onboarding flow will explain and request three permissions:
+1. **Display over other apps** : required for the floating overlay
+2. **Screen capture** : required for MediaProjection (requested once per session)
+3. **Notifications** : required to show the overlay status indicator (Android 13+)
+
+> ⚠️ **First translation may take longer**. ML Kit downloads language models (around 30MB per language pair) on first use. Subsequent translations are near-instant.
+
 
 ---
 <p align="center">Built with ❤️ as an Android portfolio project</p>
